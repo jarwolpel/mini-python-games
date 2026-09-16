@@ -3,6 +3,7 @@ import random
 import time
 from datetime import datetime
 
+# Menu data
 screen_data = {
     "menu": {
         "title": "**********************\n* Epic Fighting Game *\n**********************\n",
@@ -41,7 +42,7 @@ screen_data = {
 }
 
 # Melee range is by default 5 meters
-# Speed is meters/turn the character can move
+# Speed is meters per turn the character can move
 fighter_data = {
     "1":{
         "name": "Johnny Cools",
@@ -93,13 +94,12 @@ fighter_data = {
 
 
 """
-MAIN FIGHTING GAME LOGIC
+MAIN FIGHTING GAME LOGIC START
 """
 
-"""
-Responsible for storing the current state and the printing/formatting the screen outside of the combat loop
-"""
 class ScreenController:
+    """This class is used to control the state and print text to screen"""
+
     def __init__(self):
         self.state = ""
         self.text_to_display = {}
@@ -160,10 +160,9 @@ class Player:
             return True  # Player is dead
         return False  # Player is still alive
 
-"""
-Main fighting loop
-"""
 class FightingLoop:
+    """This class containts the methods for the fighting loop"""
+
     def __init__(self):
         self.actions_log = ""
         self.distance_between = 20
@@ -199,33 +198,43 @@ class FightingLoop:
 
             distance_moved = 0
 
-            if (self.distance_between-attacker.speed) < attacker.range:
-                self.distance_moved = self.distance_between - attacker.range
+            if (self.distance_between - attacker.speed) < attacker.range:
+                self.distance_moved = self.distance_between - attacker.range # This is always 0 for some reason
                 self.distance_between = attacker.range
 
             else:
                 distance_moved = attacker.speed
                 self.distance_between = self.distance_between - attacker.speed
 
-            self.log_event(f"Turn: {self.turn} | {attacker.name} moves {distance_moved}, and is now {self.distance_between} meters from {defender.name}\n")
+            self.log_event(f"Turn: {self.turn} | {attacker.name} moves {distance_moved}, " +
+                           f"and is now {self.distance_between} meters from {defender.name}\n")
 
-        elif attacker.weapon_class == "Ranged" and self.distance_between < attacker.range/2 and random.randint(1, 100) <= 30:
+        elif (attacker.weapon_class == "Ranged" and 
+                self.distance_between < attacker.range/2 and 
+                random.randint(1, 100) <= 30):
             distance_moved = attacker.range - self.distance_between
             self.distance_between = attacker.range
-            self.log_event(f"Turn: {self.turn} | {attacker.name} moves {distance_moved}, and is now {self.distance_between} meters from {defender.name}\n")
+            self.log_event(f"Turn: {self.turn} | {attacker.name} moves " + 
+                           f"{distance_moved}, and is now {self.distance_between} meters from {defender.name}\n")
 
         else:
-            self.log_event(f"Turn: {self.turn} | {attacker.name} {"swings at" if weapon_class == "Melee" else "shoots"} {defender.name} with their {attacker.weapon}{f" from {self.distance_between} meters away" if weapon_class == "Ranged" else ""}... \n")
+            self.log_event(f"Turn: {self.turn} | {attacker.name} " + 
+                           f"{"swings at" if weapon_class == "Melee" else "shoots"} {defender.name} with " +  
+                           f"their {attacker.weapon}" + 
+                           f"{f" from {self.distance_between} meters away" if weapon_class == "Ranged" else ""}... \n")
+
             damage = attacker.attack + random.randint(-10, 5)
             
             if random.randint(1, 100) <= attacker.range/2:
                 self.log_event(f"Turn: {self.turn} | {attacker.name} misses their {"swing" if weapon_class == "Melee" else "shot"}\n")
 
             elif random.randint(1, 100) <= defender.speed:
-                self.log_event(f"Turn: {self.turn} | {defender.name} dodged the {"swing" if weapon_class == "Melee" else "shot"} from {attacker.name}!\n")
+                self.log_event(f"Turn: {self.turn} | {defender.name} dodged the "+
+                               f"{"swing" if weapon_class == "Melee" else "shot"} from {attacker.name}!\n")
 
             else:
-                self.log_event(f"Turn: {self.turn} | {attacker.name} hits {defender.name} for {damage} damage! {defender.name} has {defender.health - damage} health remaining.\n")
+                self.log_event(f"Turn: {self.turn} | {attacker.name} hits {defender.name} for " + 
+                               f"{damage} damage! {defender.name} has {defender.health - damage} health remaining.\n")
 
                 if defender.take_damage(damage):
                     self.log_event(f"Turn: {self.turn} | {defender.name} has been slain!")
@@ -235,13 +244,15 @@ class FightingLoop:
         self.turn += 1
         self.log_event("---------------------------------------------------\n")
 
-    """
-    
+    """Controls the fighting loop
+
+    Args:
+        player1(Player): First fighter chosen
+        player2(Player): Second fighter chosen    
     """
     def start_fight(self, player1, player2):
         os.system('cls' if os.name == 'nt' else 'clear')
 
-        # Randomly select which player goes first, then loop through turns until one player is dead. Print the results of each turn to the terminal.
         first_player = player1 if random.choice([True, False]) else player2
         second_player = player2 if first_player == player1 else player1
 
@@ -282,6 +293,11 @@ class FightingLoop:
             else:
                 print("Please select a valid option (y/n)") 
 
+
+"""
+MAIN FIGHTING GAME LOGIC END
+"""
+
 def main():
     game_state_controller.change_state("menu")
     while True:
@@ -303,10 +319,6 @@ def main():
             case "exit":
                 print("Exiting the game. Goodbye!")
                 break
-
-"""
-MAIN FIGHTING GAME LOGIC
-"""
 
 
 if __name__ == "__main__":
