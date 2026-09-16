@@ -19,7 +19,6 @@ source ./bin/activate
 
 # Install dependencies
 pip install -r requirementes.txt
-
 ```
 
 ### Games
