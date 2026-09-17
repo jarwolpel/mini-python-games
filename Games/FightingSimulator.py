@@ -152,7 +152,7 @@ class Player:
         damage(int): The ammount of damage to subtract from the health
     
     Returns:
-        boolean: True/False if the player has been slain
+        (boolean): True/False if the player has been slain
     """
     def take_damage(self, damage):
         self.health -= damage
@@ -199,7 +199,7 @@ class FightingLoop:
             distance_moved = 0
 
             if (self.distance_between - attacker.speed) < attacker.range:
-                self.distance_moved = self.distance_between - attacker.range # This is always 0 for some reason
+                distance_moved = self.distance_between - attacker.range
                 self.distance_between = attacker.range
 
             else:
@@ -211,7 +211,7 @@ class FightingLoop:
 
         elif (attacker.weapon_class == "Ranged" and 
                 self.distance_between < attacker.range/2 and 
-                random.randint(1, 100) <= 30):
+                random.randint(1, 100) <= 70):
             distance_moved = attacker.range - self.distance_between
             self.distance_between = attacker.range
             self.log_event(f"Turn: {self.turn} | {attacker.name} moves " + 
@@ -279,14 +279,14 @@ class FightingLoop:
         while True:
             choice = input("\nFight over! Would you like to save the results to a file? (y/n) ")
 
-            if choice.lower() == 'y':
+            if choice.lower().strip() == 'y':
                 with open(f"{first_player.name}_vs_{second_player.name}_{datetime.now().strftime("%Y-%m-%d_%H-%M-%S")}.txt", "w") as f:
                     f.write(self.actions_log)
                 print("Battle successfully chronicled")
                 game_state_controller.change_state("exit")
                 break
 
-            elif choice.lower() == 'n':
+            elif choice.lower().strip() == 'n':
                 game_state_controller.change_state("exit")
                 break
 
@@ -309,10 +309,13 @@ def main():
             case "character_select":
                 game_state_controller.print_screen()
                 game_state_controller.print_characters_list()
+
                 player1 = input("Select First Fighter: ")
                 player2 = input("Select Second Fighter: ")
+
                 if player1 in fighter_data and player2 in fighter_data:
                     FightingLoop().start_fight(Player(**fighter_data[player1]), Player(**fighter_data[player2]))
+
                 else:
                     print("Invalid fighter selection. Returning to menu.")
                     game_state_controller.change_state("menu")
