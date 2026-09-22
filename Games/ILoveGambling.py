@@ -2,8 +2,8 @@
 TODO
 
 1: Create a simple 1 hand vs house blackjack game
-    A Create a basic deck management system
-    B Allow players to specifically be delt cards
+    A Create a basic deck management system DONE
+    B Allow players to specifically be delt cards 
 
 2: Create interface using textual, keep it simple at first
 
@@ -13,6 +13,8 @@ TODO
 
 """
 import random
+import time
+import os
 
 # Close this
 # Gonna keep it as a dict for now as it lets me add extra data
@@ -37,7 +39,7 @@ class DeckManager():
     def __init__(self):
         self.__deck_instance = deck.copy()
         self.__discard_pile = []
-        self.__cards_in_play = []
+        self.__hand_in_play = []
 
 
     """Selects the top card from the self.__deck_instance
@@ -78,7 +80,7 @@ class DeckManager():
     """
     @property
     def GetCardsInPlay(self) -> list:
-        cards = self.__cards_in_play
+        cards = self.__hand_in_play
         return cards
 
     """Gets all cards in the discard pile
@@ -97,7 +99,15 @@ class DeckManager():
         card(tuple): the card to add
     """
     def AddCardToPlay(self, card: tuple):
-        self.__cards_in_play.append(card)
+        self.__hand_in_play.append(card)
+
+
+    """Moves cards that are currently in play to the discard pile.
+        Example use, when a round or hand is over and must be redelt
+    """
+    def RemoveCardsInPlay(self):
+        self.__discard_pile.append(self.__hand_in_play)
+        self.__hand_in_play = []
 
     """Adds card to the discard pile
     
@@ -105,7 +115,7 @@ class DeckManager():
         card(tuple): the card to discard
     """
     def DiscardCard(self, card: tuple):
-        self.__cards_in_play.pop(self.__cards_in_play.index(card))
+        self.__hand_in_play.pop(self.__hand_in_play.index(card))
         self.__discard_pile.append(card)
 
     """Adds cards from the discard pile to the deck instance
@@ -116,12 +126,43 @@ class DeckManager():
         self.ShuffleDeck()
 
 
+    """Prints ascii art of a card
+
+    Args:
+        card(tuple): The card to display, reads value and suit as (value, suit)
+    
+    Returns:
+        str: The printed card
+    """
+    def CardPrinter(self, card: tuple) -> str:
+        value = card[0]
+        suit = card[1]
+        suit_art = {
+            "Hearts": (" /\\ /\\ ", "(      )", " \\    / ", "  \\  /  ", "   \\/   "),
+            "Diamonds": ("    /\\   ", "   /  \\  ", "  <    > ", "   \\  /  ", "    \\/   "),
+            "Clubs": ("   ____  ", "  (    ) ", " (  ()  )", "   \\__/  ", "    ||   "),
+            "Spades": ("    /\\   ", "   /  \\  ", "  (    ) ", "   \\  /  ", "    ||   "),
+        }.get(suit, (suit, "", "", "", ""))
+
+        return f"""
++---------+
+| {value:<7} |
+|{suit_art[0]:^9}|
+|{suit_art[1]:^9}|
+|{suit_art[2]:^9}|
+|{suit_art[3]:^9}|
+|{suit_art[4]:^9}|
+| {value:>7} |
++---------+
+"""
+
+
 class BlackJackPlayer():
     """Constructor for a player hand"""
 
-    def __init__(self, player_name: str, cards: list, balance: int):
+    def __init__(self, player_name: str, hand: list, balance: int):
         self.__player_name = player_name
-        self.__cards = cards
+        self.__hand = hand
         self.__balance = balance
 
     @property
@@ -143,34 +184,262 @@ class BlackJackPlayer():
         self.__balance = value    
 
     @property
-    def player_cards(self) -> list:
-        return self.__cards
+    def player_hand(self) -> list:
+        return self.__hand
 
-    @player_cards.setter
-    def set_player_cards(self, cards: list):
-        self.__cards = cards
+    @player_hand.setter
+    def player_hand(self, hand: list):
+        self.__hand = hand
 
 
 class PlayBlackjack():
     """Main logic for playing and betting"""
 
     def __init__(self):
-        self.manager = DeckManager()
         self.dealer = BlackJackPlayer("Dealer", [], 0)
-        self.player = BlackJackPlayer("Player", [], 0)
+        self.player = BlackJackPlayer("Player", [], 1000)
+        self.player_bet = 0
+        self.game_state = "player_betting"
+        self.DeckManager = DeckManager()
+        self.player_total = 0
+        self.dealer_total = 0
+
+    def SetState(self, new_state: str):
+        valid_states = {
+            "player_betting",
+            "initial_deal",
+            "player_turn",
+            "dealer_turn",
+            "game_over",
+        }
+        if new_state not in valid_states:
+            raise ValueError(
+                f"Invalid game state: {new_state!r}. "
+                f"Expected one of {sorted(valid_states)}"
+            )
+        self.game_state = new_state
 
     def Bet(self):
-        pass
+        if self.player.balance < 1:
+            print("Game Over!")
+            self.SetState("game_over")
+        else:
+            while True:
+                print("Place your bet for this hand.")
+                print(f"Balance: {self.player.balance}")
+                amount = input("Place your bet: ")
+                try:
 
-    def DealOut(self):
-        pass
+                    self.player_bet = int(amount)
 
-        
+                    if int(amount) < 0 or int(amount) > self.player.balance:
+                        raise ValueError
+                    self.DeckManager.RemoveCardsInPlay()
+                    self.player.player_hand = []
+                    self.dealer.player_hand = []
+                    self.SetState("initial_deal")
+                    break
+                except ValueError as e:
+                    print(f"Please place a valid integer as a bet that is not negative and is not greater then your balance")
 
-    
+
+    def InitialDeal(self):
+        try:
+            # Shuffle
+            self.DeckManager.ShuffleDeck()
+
+            # Dealer First Card
+            self.dealer.player_hand.append(self.DeckManager.DealCard())
+
+            # Player First Card
+            self.player.player_hand.append(self.DeckManager.DealCard())
+
+            # Dealer Second Card
+            self.dealer.player_hand.append(self.DeckManager.DealCard())
+
+            # Player Second Card
+            self.player.player_hand.append(self.DeckManager.DealCard())
+
+            self.SetState("player_turn")
+        except ValueError as e:
+            print(e)
+
+    def PrintTable(self, dealer_shows_cards: bool = False):
+        os.system('cls' if os.name == 'nt' else 'clear')
+
+        print(f" {"Dealer Cards:":>7}")
+        if not dealer_shows_cards:
+            dealer_card_rows = [
+                self.DeckManager.CardPrinter(card).strip("\n").splitlines()
+                for card in (self.dealer.player_hand[0], ("","") )
+            ]
+        else:
+            dealer_card_rows = [
+                self.DeckManager.CardPrinter(card).strip("\n").splitlines()
+                for card in self.dealer.player_hand
+            ]
+        dealer_cards_display = "\n".join(
+            "  ".join(row)
+            for row in zip(*dealer_card_rows)
+        )
+        print(dealer_cards_display + "\n")
+
+
+        print(f" {"Player Cards:":>7}")
+        card_rows = [
+            self.DeckManager.CardPrinter(card).strip("\n").splitlines()
+            for card in self.player.player_hand
+        ]
+        players_card_display = "\n".join(
+            "  ".join(row)
+            for row in zip(*card_rows)
+        )
+
+        print(players_card_display)
+
+    def PlayerDecision(self):
+        # Calculate Sum, if 21, give 1.5X bet reward
+        # Offer the ability to Hit, Split(Add later), Or Pass
+        # Loop until player busts or selects pass
+        try:
+            while True:
+                self.PrintTable()
+                # If dealer upcard is valued at 10 or is an Ace check
+                self.dealer_total = 0
+                for each in self.dealer.player_hand:
+                    if each[0] == "Ace":
+                        if (self.dealer_total + 11) > 21:
+                            self.dealer_total = self.dealer_total + 1
+                        else:
+                            self.dealer_total = self.dealer_total + 11
+                    elif (each[0] == "King" or 
+                        each[0] == "Queen" or
+                        each[0] == "Jack"):
+                        self.dealer_total = self.dealer_total + 10
+
+                    else:
+                        self.dealer_total = self.dealer_total + int(each[0])
+
+                if self.dealer_total == 21:
+                    self.PrintTable(True)
+                    print("Dealer has 21, player loses")
+                    self.player.balance = self.player.balance - self.player_bet
+                    time.sleep(5)
+                    self.SetState("player_betting")
+                    break
+
+                # Redo the count everyloop so it properly updates ace values
+                self.player_total = 0
+                for each in self.player.player_hand:
+                    if each[0] == "Ace":
+                        if (self.player_total + 11) > 21:
+                            print("Ace is counted as 1")
+                            self.player_total = self.player_total + 1
+                        else:
+                            self.player_total = self.player_total + 11
+                    elif (each[0] == "King" or 
+                        each[0] == "Queen" or
+                        each[0] == "Jack"):
+                        self.player_total = self.player_total + 10
+
+                    else:
+                        self.player_total = self.player_total + int(each[0])
+
+                if self.player_total > 21:
+                    print(f"Player busted and lost ${self.player_bet}")
+                    self.player.balance = self.player.balance - self.player_bet
+                    time.sleep(5)
+                    self.SetState("player_betting")
+                    break
+
+                print(f"Player total is {self.player_total}")
+                choice = None
+                while True:
+                    try:
+                        print("Hit(1) or Stand(2):")
+                        choice = input("")
+                        choice = int(choice)
+                        if choice not in (1, 2):
+                            raise ValueError
+                        break
+                    except ValueError:
+                        print("Please select 1 or 2")
+            
+                if choice == 2:
+                    self.SetState("dealer_turn")
+                    break
+                elif choice == 1:
+                    self.player.player_hand.append(self.DeckManager.DealCard())
+
+        except Exception as e:
+            print(e)
+
+    def DealerHits(self):
+        try:
+            while True:
+                self.PrintTable(True)
+
+                self.dealer_total = 0
+                for each in self.dealer.player_hand:
+                    if each[0] == "Ace":
+                        if (self.dealer_total + 11) > 21:
+                            self.dealer_total = self.dealer_total + 1
+                        else:
+                            self.dealer_total = self.dealer_total + 11
+                    elif (each[0] == "King" or 
+                        each[0] == "Queen" or
+                        each[0] == "Jack"):
+                        self.dealer_total = self.dealer_total + 10
+
+                    else:
+                        self.dealer_total = self.dealer_total + int(each[0])
+
+                print(f"Dealer has {self.dealer_total}")
+                print(f"The player has {self.player_total}")
+                if self.dealer_total < 17:
+                    self.dealer.player_hand.append(self.DeckManager.DealCard())
+                    time.sleep(2)
+                elif self.dealer_total > 21:
+                    print(f"The dealer busts! The player wins ${self.player_bet}")
+                    self.player.balance = self.player.balance + (self.player_bet*2)
+                    time.sleep(5)
+                    self.SetState("player_betting")
+                    break
+                else:
+                    if self.dealer_total > self.player_total:
+                        self.player.balance = self.player.balance - self.player_bet
+                        print(f"The dealer wins this hand, the player loses ${self.player_bet}")
+                    elif self.player_total > self.dealer_total:
+                        self.player.balance = self.player.balance + (self.player_bet*2)
+                        print(f"The player wins this hand and wins ${self.player_bet}")
+                    else:
+                        print("Draw!")
+
+                    time.sleep(5)
+                    self.SetState("player_betting")
+                    break
+
+        except Exception as e:
+            print(e)
+            time.sleep(5)
+            self.SetState("player_betting")
 
 def main():
-    pass
+    BlackJack = PlayBlackjack()
+
+    while True:
+        match BlackJack.game_state:
+            case "player_betting":
+                os.system('cls' if os.name == 'nt' else 'clear')
+                BlackJack.Bet()
+            case "initial_deal":
+                BlackJack.InitialDeal()
+            case "player_turn":
+                BlackJack.PlayerDecision()
+            case "dealer_turn":
+                BlackJack.DealerHits()
+            case "game_over":
+                break
 
 
 if __name__ == "__main__":
