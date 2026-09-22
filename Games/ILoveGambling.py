@@ -158,7 +158,7 @@ class DeckManager():
 
 
 class BlackJackPlayer():
-    """Constructor for a player hand"""
+    """Used to instantiate the player and dealer"""
 
     def __init__(self, player_name: str, hand: list, balance: int):
         self.__player_name = player_name
@@ -204,6 +204,14 @@ class PlayBlackjack():
         self.player_total = 0
         self.dealer_total = 0
 
+    """Changes the Blackjack game state
+    
+    Args:
+        new_state(str): The state to change too
+
+    Raises:
+        ValueError: If new_state is not a valid state
+    """
     def SetState(self, new_state: str):
         valid_states = {
             "player_betting",
@@ -219,6 +227,12 @@ class PlayBlackjack():
             )
         self.game_state = new_state
 
+    """Prompts the player for their bet.
+
+    Raises:
+        ValueError: If the amount input is not an int, or if the amount
+                    input is greater then the balance
+    """
     def Bet(self):
         if self.player.balance < 1:
             print("Game Over!")
@@ -242,7 +256,7 @@ class PlayBlackjack():
                 except ValueError as e:
                     print(f"Please place a valid integer as a bet that is not negative and is not greater then your balance")
 
-
+    """Deals out the initial 4 cards of a hand"""
     def InitialDeal(self):
         try:
             # Shuffle
@@ -264,6 +278,11 @@ class PlayBlackjack():
         except ValueError as e:
             print(e)
 
+    """Prints all the cards in play. Hides dealer bottom card
+    
+    Args:
+        dealer_shows_cards(bool): Toggles if the dealer bottom card is shown
+    """
     def PrintTable(self, dealer_shows_cards: bool = False):
         os.system('cls' if os.name == 'nt' else 'clear')
 
@@ -297,6 +316,7 @@ class PlayBlackjack():
 
         print(players_card_display)
 
+    """The hit/stand loop"""
     def PlayerDecision(self):
         # Calculate Sum, if 21, give 1.5X bet reward
         # Offer the ability to Hit, Split(Add later), Or Pass
@@ -374,6 +394,7 @@ class PlayBlackjack():
         except Exception as e:
             print(e)
 
+    """Dealer hits after player stands"""
     def DealerHits(self):
         try:
             while True:
