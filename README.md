@@ -26,4 +26,4 @@ pip install -r requirementes.txt
 | Game | Description |Non-standard dependencies |
 |:------:|:-----------:| :-----------------------: |
 | Fighting Simulator | Choose 2 fighters, watch them battle to the death in epic text-based action! |None|
-
+|Black Jack| Play a one player text based BlackJack game | None|
