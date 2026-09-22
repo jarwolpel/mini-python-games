@@ -27,3 +27,12 @@ pip install -r requirementes.txt
 |:------:|:-----------:| :-----------------------: |
 | Fighting Simulator | Choose 2 fighters, watch them battle to the death in epic text-based action! |None|
 |Black Jack| Play a one player text based BlackJack game | None|
+
+
+### Plans
+| Name | Description | 
+|:------:|:-----------------------: |
+| BlackJack UI | Add UI to the BlackJack game, use textual or something like that |
+| Poker | Add poker to the BlackJack game and turn it into a mini casino game |
+| Fighting Game ASCII art| Add ASCII are similar to the BlackJack game to the fighting game |
+
